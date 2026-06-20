@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Diagnóstico de Madurez en Gobernanza de IA — DAHRI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<!-- jsPDF para generar el PDF en el navegador -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --navy:#0f2a43;--navy-2:#163a5c;--slate:#3a4a5a;--muted:#6b7b8a;--line:#dde5ec;
+  --light:#eef2f6;--bg:#f4f7fa;--accent:#1f6feb;--safe:#1f8a5b;--warn:#d99100;--crit:#c0392b;
+  --radius:14px;--shadow:0 10px 30px rgba(15,42,67,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:radial-gradient(1200px 500px at 100% -10%,#e7eef6 0%,transparent 60%),var(--bg);
+  color:var(--slate);min-height:100vh}
+.app{max-width:760px;margin:0 auto;padding:28px 20px 48px;min-height:100vh;display:flex;flex-direction:column}
+.brand{margin-bottom:18px}
+.brand-mark{font-weight:700;letter-spacing:1.5px;color:var(--navy);font-size:15px}
+.brand-mark span{color:var(--muted);font-weight:600}
+.progress{margin-bottom:18px}.progress.hidden{display:none}
+.progress-track{height:7px;background:var(--line);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--navy),var(--accent));border-radius:99px;transition:width .35s ease}
+.progress-label{margin-top:8px;font-size:12.5px;color:var(--muted);font-weight:500}
+.stage{flex:1;display:flex}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:38px;width:100%;animation:rise .4s ease}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.eyebrow{text-transform:uppercase;letter-spacing:1.4px;font-size:11.5px;font-weight:600;color:var(--accent)}
+h1{font-size:28px;line-height:1.2;color:var(--navy);margin:10px 0 14px}
+.lead{font-size:15.5px;line-height:1.6;color:var(--slate)}
+.meta{list-style:none;padding:0;margin:22px 0;display:grid;gap:10px}
+.meta li{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--slate)}
+.meta li::before{content:'';width:7px;height:7px;border-radius:99px;background:var(--accent);margin-top:7px;flex:none}
+.field{margin:20px 0 8px}
+.field label{display:block;font-weight:600;font-size:13.5px;color:var(--navy);margin-bottom:7px}
+.field input{width:100%;padding:14px 15px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;color:var(--navy);transition:border-color .2s,box-shadow .2s}
+.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,235,.12)}
+.field .hint{font-size:12.5px;color:var(--muted);margin-top:7px}
+.error-text{color:var(--crit);font-size:13px;margin-top:8px;min-height:18px}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--muted);margin-top:6px}
+.consent input{margin-top:2px}
+.q-cat{text-transform:uppercase;letter-spacing:1.2px;font-size:11.5px;font-weight:700;color:var(--accent)}
+.q-text{font-size:20px;line-height:1.35;color:var(--navy);margin:10px 0 22px;font-weight:600}
+.options{display:grid;gap:12px}
+.option{display:flex;align-items:center;gap:13px;padding:15px 16px;border:1.5px solid var(--line);border-radius:11px;cursor:pointer;transition:border-color .15s,background .15s,transform .05s;font-size:14.5px;line-height:1.45;color:var(--slate)}
+.option:hover{border-color:#c4d2df;background:#fafcfe}.option:active{transform:scale(.995)}
+.option .dot{width:20px;height:20px;flex:none;border:2px solid #c4d2df;border-radius:99px;position:relative;transition:border-color .15s}
+.option.selected{border-color:var(--accent);background:rgba(31,111,235,.05);color:var(--navy)}
+.option.selected .dot{border-color:var(--accent)}
+.option.selected .dot::after{content:'';position:absolute;inset:3px;border-radius:99px;background:var(--accent)}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:28px;gap:12px}
+.btn{font-family:inherit;font-weight:600;font-size:14.5px;padding:13px 24px;border-radius:10px;border:1.5px solid transparent;cursor:pointer;transition:background .15s,opacity .15s,transform .05s;text-decoration:none;display:inline-block}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--navy);color:#fff}.btn-primary:hover{background:var(--navy-2)}
+.btn-ghost{background:transparent;color:var(--muted);border-color:var(--line)}
+.btn-ghost:hover{color:var(--navy);border-color:#c4d2df}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.result-score{font-size:56px;font-weight:700;color:var(--navy);line-height:1}
+.result-score small{font-size:22px;color:var(--muted);font-weight:600}
+.zone-badge{display:inline-block;margin:14px 0 18px;padding:7px 16px;border-radius:99px;font-weight:700;font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:#fff}
+.result-summary{font-size:15px;line-height:1.6}
+.result-next{margin-top:16px;padding:16px;background:var(--light);border-radius:10px;font-size:14px;line-height:1.55}
+.sent-note{margin-top:22px;font-size:13.5px;color:var(--muted);display:flex;gap:9px;align-items:flex-start}
+.spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:99px;display:inline-block;vertical-align:-3px;margin-right:9px;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.foot{margin-top:24px;text-align:center;font-size:12px;color:var(--muted)}
+@media(max-width:560px){.card{padding:26px 20px}h1{font-size:23px}.q-text{font-size:18px}.result-score{font-size:46px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="brand"><div class="brand-mark">DAHRI <span>RESPONSIBLE AI</span></div></header>
+  <div id="progress" class="progress hidden">
+    <div class="progress-track"><div id="progress-bar" class="progress-fill"></div></div>
+    <div id="progress-label" class="progress-label"></div>
+  </div>
+  <main id="stage" class="stage"></main>
+  <footer class="foot">dahri.io · paco@dahri.io · Washington D.C.</footer>
+</div>
+
+<script>
+/* =================================================================
+   CONFIGURACIÓN — pega aquí tu Access Key gratuita de Web3Forms.
+   1) Crea una cuenta en https://web3forms.com con el correo fquintana@dahri.io
+   2) Copia tu "Access Key" y pégala abajo entre comillas.
+   Mientras diga PEGA-AQUI..., la encuesta funciona y genera el PDF,
+   pero NO enviará el aviso por correo a DAHRI.
+   ================================================================= */
+const WEB3FORMS_ACCESS_KEY = "ac0a7737-2605-4a0a-8fb0-bcd409b468ba";
+const DAHRI_RECIPIENT = "fquintana@dahri.io";
+
+/* ---------- Datos de la encuesta (ISO/IEC 42001 · UNESCO 2021) ---------- */
+const QUESTIONS = [
+  {id:1,category:'Inventario de herramientas',text:'¿Tu organización tiene un inventario documentado de las herramientas de IA que utilizan sus equipos hoy?',options:[
+    {text:'Sí, mantenemos un registro actualizado de todas las herramientas y de quién las usa.',points:3},
+    {text:'Tenemos un registro parcial, principalmente de las herramientas contratadas formalmente.',points:2},
+    {text:'No tenemos registro formal, pero la dirección sabe aproximadamente qué se usa.',points:1},
+    {text:'No sabemos qué herramientas de IA están usando nuestros empleados.',points:0}]},
+  {id:2,category:'Política interna',text:'¿Existe en tu organización una política escrita y vigente sobre el uso de inteligencia artificial?',options:[
+    {text:'Sí, hay una política documentada, comunicada al personal y revisada en el último año.',points:3},
+    {text:'Hay un documento borrador o lineamientos informales que algunos conocen.',points:2},
+    {text:'Se ha conversado el tema pero no hay nada por escrito.',points:1},
+    {text:'No existe ninguna política ni lineamiento sobre el uso de IA.',points:0}]},
+  {id:3,category:'Datos confidenciales',text:'¿Tienes reglas claras sobre qué información de la organización o de clientes puede o no puede ingresarse a herramientas de IA?',options:[
+    {text:'Sí, las reglas están documentadas, los empleados las conocen y se verifican periódicamente.',points:3},
+    {text:'Hay reglas verbales pero su aplicación depende del criterio de cada persona.',points:2},
+    {text:'Confiamos en el sentido común del equipo, sin reglas específicas.',points:1},
+    {text:'No tenemos reglas y no sabemos qué datos están subiendo nuestros empleados a estas herramientas.',points:0}]},
+  {id:4,category:'Decisiones automatizadas',text:'¿Usa tu organización IA para tomar o asistir decisiones sobre personas, como contratación, evaluación de clientes, crédito o atención prioritaria?',options:[
+    {text:'Sí, y cada uso pasó por evaluación de impacto previa con supervisión humana documentada.',points:3},
+    {text:'Sí, con revisión humana informal pero sin evaluación formal previa.',points:2},
+    {text:'Sí, y aceptamos las recomendaciones del sistema sin revisión detallada.',points:1},
+    {text:'Sí o no sabemos con certeza, no hay control sobre este punto.',points:0}]},
+  {id:5,category:'Proveedores y contratos',text:'Cuando contratas herramientas o servicios de IA, ¿evalúas las condiciones contractuales sobre uso de datos, confidencialidad y responsabilidad del proveedor?',options:[
+    {text:'Sí, hay un proceso formal de evaluación legal antes de cada contratación.',points:3},
+    {text:'Revisamos los términos generales pero sin análisis legal específico.',points:2},
+    {text:'Aceptamos los términos estándar sin revisión detallada.',points:1},
+    {text:'No tenemos visibilidad de los contratos vigentes con proveedores de IA.',points:0}]},
+  {id:6,category:'Capacitación',text:'¿Las personas que usan herramientas de IA en tu organización han recibido capacitación formal sobre uso responsable, sesgos y riesgos?',options:[
+    {text:'Sí, hay un programa de capacitación recurrente con registro de participación.',points:3},
+    {text:'Algunos equipos recibieron una capacitación inicial pero sin seguimiento.',points:2},
+    {text:'Aprendieron por su cuenta o con tutoriales informales.',points:1},
+    {text:'Nadie ha recibido formación específica sobre uso responsable de IA.',points:0}]},
+  {id:7,category:'Rendición de cuentas',text:'¿Está claramente definido en tu organización quién es responsable cuando una decisión asistida o tomada por IA produce un daño o un error?',options:[
+    {text:'Sí, los roles y responsabilidades están documentados y comunicados.',points:3},
+    {text:'Existe una idea general pero no está formalizada por escrito.',points:2},
+    {text:'No lo hemos pensado pero asumimos que sería del jefe del área.',points:1},
+    {text:'No hay claridad sobre quién respondería ante un incidente.',points:0}]},
+  {id:8,category:'Trazabilidad',text:'Si un cliente, un regulador o un juez te pidiera demostrar cómo y por qué un sistema de IA tomó una decisión específica, ¿podrías hacerlo?',options:[
+    {text:'Sí, tenemos registros documentales completos y auditables.',points:3},
+    {text:'Podríamos reconstruir parcialmente con esfuerzo y tiempo.',points:2},
+    {text:'Sería muy difícil o solo para algunos casos específicos.',points:1},
+    {text:'No podríamos demostrarlo, no guardamos esos registros.',points:0}]},
+  {id:9,category:'Marco normativo',text:'¿Conoces los requisitos de ISO/IEC 42001 y la Recomendación UNESCO 2021, o la regulación de IA emergente en tu país?',options:[
+    {text:'Conozco bien los marcos y los estamos aplicando activamente.',points:3},
+    {text:'Conozco que existen y leí lo básico, pero no los aplicamos formalmente.',points:2},
+    {text:'He escuchado de ellos pero no los he revisado.',points:1},
+    {text:'No conozco estos marcos ni la regulación aplicable a mi sector.',points:0}]},
+  {id:10,category:'Revisión periódica',text:'¿Tu organización revisa periódicamente los resultados que producen los sistemas de IA en uso, evaluando posibles sesgos, errores o impactos no previstos?',options:[
+    {text:'Sí, hay un proceso documentado de revisión periódica con métricas definidas.',points:3},
+    {text:'Revisamos esporádicamente cuando alguien detecta algo extraño.',points:2},
+    {text:'No revisamos sistemáticamente, confiamos en que el sistema funcione bien.',points:1},
+    {text:'Nunca hemos revisado el desempeño de estos sistemas.',points:0}]},
+];
+const MAX_SCORE = QUESTIONS.length*3;
+const ZONES = [
+  {id:'segura',label:'Zona segura',min:22,max:30,color:'#1f8a5b',
+   summary:'Tu organización cuenta con elementos sólidos de gobernanza de IA. Hay política, controles, capacitación y trazabilidad funcionando. Estás en posición de consolidar el sistema, profundizar la revisión periódica e iniciar la ruta hacia certificación ISO/IEC 42001 si tu sector lo amerita. El riesgo principal en esta zona es la complacencia: la gobernanza que no se revisa, envejece.',
+   nextStep:'Auditoría externa de tu sistema actual y definición de hoja de ruta hacia certificación formal.'},
+  {id:'alerta',label:'Zona de alerta',min:12,max:21,color:'#d99100',
+   summary:'Tu organización tiene conciencia del tema y algunas prácticas iniciales, pero los controles son parciales, informales o aplicados de manera inconsistente. Es la zona más común en organizaciones latinoamericanas hoy. El riesgo es real: un incidente, una auditoría de cliente corporativo o un cambio regulatorio puede exponer la falta de gobernanza formal en cuestión de semanas.',
+   nextStep:'Diagnóstico formal de gobernanza, diseño e implementación de política interna y controles operativos mínimos viables.'},
+  {id:'critica',label:'Zona de exposición crítica',min:0,max:11,color:'#c0392b',
+   summary:'Tu organización está usando o tolerando el uso de inteligencia artificial sin marco de control. Esto no significa que algo malo haya ocurrido todavía; significa que no tienes manera de saber si está ocurriendo. La exposición incluye fuga de datos confidenciales de clientes, decisiones discriminatorias asistidas por algoritmos, incumplimiento regulatorio creciente y dificultad para responder ante incidentes. Es la zona donde un solo error público puede costar más que años de prevención.',
+   nextStep:'Conversación urgente con un especialista. El primer movimiento no es comprar tecnología, es ordenar lo que ya hay y detener prácticas de alto riesgo.'},
+];
+const getZone = s => ZONES.find(z => s>=z.min && s<=z.max) || ZONES[ZONES.length-1];
+
+/* ---------- Estado y flujo ---------- */
+const stage=document.getElementById('stage');
+const progress=document.getElementById('progress');
+const progressBar=document.getElementById('progress-bar');
+const progressLabel=document.getElementById('progress-label');
+const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const state={email:'',company:'',answers:new Array(QUESTIONS.length).fill(null),step:-1};
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function updateProgress(){
+  if(state.step<0){progress.classList.add('hidden');return;}
+  progress.classList.remove('hidden');
+  const cur=state.step+1;
+  progressBar.style.width=(cur/QUESTIONS.length*100)+'%';
+  progressLabel.textContent=`Pregunta ${cur} de ${QUESTIONS.length}`;
+}
+
+function renderCover(){
+  state.step=-1;updateProgress();
+  stage.innerHTML=`
+  <div class="card">
+    <div class="eyebrow">Diagnóstico · ISO/IEC 42001 · UNESCO 2021</div>
+    <h1>Diagnóstico de Madurez en Gobernanza de Inteligencia Artificial</h1>
+    <p class="lead">Una evaluación de diez preguntas para identificar el nivel de exposición de tu organización frente a los riesgos operativos, legales y éticos derivados del uso de inteligencia artificial.</p>
+    <ul class="meta">
+      <li>Diseñado para pequeñas y medianas organizaciones (20 a 200 empleados)</li>
+      <li>Tiempo estimado: 5 a 7 minutos</li>
+      <li>Al finalizar podrás descargar tu diagnóstico en PDF</li>
+    </ul>
+    <div class="field">
+      <label for="email">Correo electrónico *</label>
+      <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="tu@organizacion.org" value="${esc(state.email)}" />
+      <div class="hint">Lo usamos para identificar tu diagnóstico y, si lo deseas, contactarte.</div>
+    </div>
+    <div class="field">
+      <label for="company">Organización <span style="color:var(--muted);font-weight:500">(opcional)</span></label>
+      <input id="company" type="text" autocomplete="organization" placeholder="Nombre de tu organización" value="${esc(state.company)}" />
+    </div>
+    <label class="consent">
+      <input id="consent" type="checkbox" />
+      <span>Acepto que DAHRI Consulting LLC procese mi correo para enviarme el resultado y contactarme sobre este diagnóstico.</span>
+    </label>
+    <div class="error-text" id="cover-error"></div>
+    <div class="nav"><span></span>
+      <button class="btn btn-primary" id="start-btn">Comenzar diagnóstico →</button>
+    </div>
+  </div>`;
+  const emailInput=document.getElementById('email');
+  const companyInput=document.getElementById('company');
+  const consent=document.getElementById('consent');
+  const err=document.getElementById('cover-error');
+  document.getElementById('start-btn').addEventListener('click',()=>{
+    const email=emailInput.value.trim();
+    if(!EMAIL_RE.test(email)){err.textContent='Ingresa un correo electrónico válido para continuar.';emailInput.focus();return;}
+    if(!consent.checked){err.textContent='Marca la casilla de consentimiento para continuar.';return;}
+    state.email=email;state.company=companyInput.value.trim();state.step=0;renderQuestion();
+  });
+  emailInput.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('start-btn').click();});
+}
+
+function renderQuestion(){
+  updateProgress();
+  const q=QUESTIONS[state.step];
+  const selected=state.answers[state.step];
+  const isLast=state.step===QUESTIONS.length-1;
+  stage.innerHTML=`
+  <div class="card">
+    <div class="q-cat">Pregunta ${String(q.id).padStart(2,'0')} · ${esc(q.category)}</div>
+    <div class="q-text">${esc(q.text)}</div>
+    <div class="options">
+      ${q.options.map((opt,i)=>`
+        <label class="option ${selected===i?'selected':''}" data-i="${i}">
+          <span class="dot"></span><span>${esc(opt.text)}</span>
+        </label>`).join('')}
+    </div>
+    <div class="nav">
+      <button class="btn btn-ghost" id="back-btn">← Anterior</button>
+      <button class="btn btn-primary" id="next-btn" ${selected===null?'disabled':''}>${isLast?'Revisar y enviar →':'Siguiente →'}</button>
+    </div>
+  </div>`;
+  const nextBtn=document.getElementById('next-btn');
+  stage.querySelectorAll('.option').forEach(el=>{
+    el.addEventListener('click',()=>{
+      state.answers[state.step]=Number(el.dataset.i);
+      stage.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));
+      el.classList.add('selected');nextBtn.disabled=false;
+    });
+  });
+  document.getElementById('back-btn').addEventListener('click',()=>{
+    if(state.step===0)renderCover();else{state.step--;renderQuestion();}
+  });
+  nextBtn.addEventListener('click',()=>{
+    if(state.answers[state.step]===null)return;
+    if(isLast)renderReview();else{state.step++;renderQuestion();}
+  });
+}
+
+function renderReview(){
+  progress.classList.add('hidden');
+  const answered=state.answers.filter(a=>a!==null).length;
+  stage.innerHTML=`
+  <div class="card">
+    <div class="eyebrow">Último paso</div>
+    <h1 style="font-size:24px">Todo listo para enviar</h1>
+    <p class="lead">Respondiste las ${answered} preguntas. Al enviar calcularemos tu resultado, podrás descargar tu PDF y notificaremos a nuestro equipo.</p>
+    <div class="result-next" style="margin-top:8px">Recuerda: marca la opción que mejor describe la situación <strong>actual</strong> de tu organización, no la deseada. Si quieres ajustar alguna respuesta, usa "Revisar respuestas".</div>
+    <div class="error-text" id="submit-error"></div>
+    <div class="nav">
+      <button class="btn btn-ghost" id="review-back">← Revisar respuestas</button>
+      <button class="btn btn-primary" id="submit-btn">Enviar diagnóstico</button>
+    </div>
+  </div>`;
+  document.getElementById('review-back').addEventListener('click',()=>{state.step=QUESTIONS.length-1;renderQuestion();});
+  document.getElementById('submit-btn').addEventListener('click',submit);
+}
+
+function computeResult(){
+  let score=0;
+  const results=QUESTIONS.map((q,i)=>{const o=q.options[state.answers[i]];score+=o.points;
+    return{id:q.id,category:q.category,answerText:o.text,points:o.points};});
+  return{score,zone:getZone(score),results};
+}
+
+async function submit(){
+  const btn=document.getElementById('submit-btn');
+  const err=document.getElementById('submit-error');
+  err.textContent='';btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Enviando…';
+  const r=computeResult();
+  // Notifica a DAHRI vía Web3Forms (no bloquea el resultado del usuario)
+  try{ await notifyDahri(r); }catch(e){ console.warn('Web3Forms:',e); }
+  renderResult(r);
+}
+
+async function notifyDahri(r){
+  if(!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY.startsWith('PEGA-AQUI')){
+    console.warn('Web3Forms sin configurar: no se envió el aviso a DAHRI.');return;
+  }
+  const detalle=r.results.map(x=>`${String(x.id).padStart(2,'0')}. ${x.category}: ${x.answerText} (${x.points} pts)`).join('\n');
+  const payload={
+    access_key:WEB3FORMS_ACCESS_KEY,
+    subject:`[Lead] Diagnóstico IA — ${state.email} — ${r.score}/${MAX_SCORE} (${r.zone.label})`,
+    from_name:'Diagnóstico DAHRI',
+    email:DAHRI_RECIPIENT,
+    replyto:state.email,
+    Correo:state.email,
+    Organización:state.company||'(no indicada)',
+    Puntaje:`${r.score}/${MAX_SCORE}`,
+    Zona:r.zone.label,
+    Respuestas:detalle
+  };
+  const res=await fetch('https://api.web3forms.com/submit',{
+    method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},
+    body:JSON.stringify(payload)
+  });
+  const data=await res.json();
+  if(!data.success)throw new Error(data.message||'Fallo Web3Forms');
+}
+
+/* ---------- PDF en el navegador (jsPDF) ---------- */
+function downloadPDF(r){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  const H=doc.internal.pageSize.getHeight();
+  const M=42, cw=W-M*2;
+  const navy=[15,42,67], slate=[58,74,90], light=[238,242,246], muted=[120,135,150];
+  const zc=r.zone.id==='segura'?[31,138,91]:r.zone.id==='alerta'?[217,145,0]:[192,57,43];
+  // Encabezado
+  doc.setFillColor(...navy);doc.rect(0,0,W,74,'F');
+  doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(9);
+  doc.text('DAHRI RESPONSIBLE AI',M,28);
+  doc.setFontSize(15);doc.text('Diagnóstico de Madurez en Gobernanza de IA',M,48,{maxWidth:cw});
+  let y=98;
+  doc.setTextColor(...slate);doc.setFont('helvetica','normal');doc.setFontSize(10);
+  doc.text('Correo: '+state.email,M,y);y+=15;
+  if(state.company){doc.text('Organización: '+state.company,M,y);y+=15;}
+  const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  doc.text('Fecha: '+fecha,M,y);y+=24;
+  // Puntaje
+  doc.setFillColor(...light);doc.roundedRect(M,y,cw,76,6,6,'F');
+  doc.setTextColor(...navy);doc.setFont('helvetica','bold');doc.setFontSize(34);
+  doc.text(String(r.score),M+18,y+44);
+  doc.setFontSize(15);doc.setTextColor(...slate);doc.text('/ '+MAX_SCORE+' puntos',M+18+doc.getTextWidth(String(r.score))+10,y+44);
+  doc.setFontSize(12);doc.setTextColor(...zc);doc.text(r.zone.label.toUpperCase(),M+18,y+66);
+  y+=98;
+  // Interpretación
+  doc.setTextColor(...navy);doc.setFont('helvetica','bold');doc.setFontSize(12);
+  doc.text('Interpretación de tu resultado',M,y);y+=16;
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(...slate);
+  const sum=doc.splitTextToSize(r.zone.summary,cw);doc.text(sum,M,y);y+=sum.length*13+8;
+  doc.setFont('helvetica','bold');doc.setTextColor(...navy);doc.text('Próximo paso recomendado:',M,y);y+=14;
+  doc.setFont('helvetica','normal');doc.setTextColor(...slate);
+  const nx=doc.splitTextToSize(r.zone.nextStep,cw);doc.text(nx,M,y);y+=nx.length*13+18;
+  // Tabla
+  doc.setFont('helvetica','bold');doc.setTextColor(...navy);doc.setFontSize(12);
+  doc.text('Detalle de respuestas',M,y);y+=14;
+  const c1=cw*0.36,c2=cw*0.52,c3=cw*0.12;
+  doc.setFillColor(...navy);doc.rect(M,y,cw,18,'F');
+  doc.setTextColor(255);doc.setFontSize(8.5);
+  doc.text('Categoría',M+5,y+12);doc.text('Respuesta',M+c1+5,y+12);doc.text('Pts',M+c1+c2+5,y+12);
+  y+=18;doc.setFont('helvetica','normal');doc.setFontSize(8);
+  r.results.forEach((x,i)=>{
+    const cat=doc.splitTextToSize(String(x.id).padStart(2,'0')+'. '+x.category,c1-10);
+    const ans=doc.splitTextToSize(x.answerText,c2-10);
+    const rows=Math.max(cat.length,ans.length);const rh=rows*10+8;
+    if(y+rh>H-70){doc.addPage();y=M;}
+    if(i%2===0){doc.setFillColor(...light);doc.rect(M,y,cw,rh,'F');}
+    doc.setTextColor(...navy);doc.setFont('helvetica','bold');doc.text(cat,M+5,y+11);
+    doc.setTextColor(...slate);doc.setFont('helvetica','normal');doc.text(ans,M+c1+5,y+11);
+    doc.setTextColor(...navy);doc.setFont('helvetica','bold');doc.text(String(x.points),M+c1+c2+5,y+11);
+    y+=rh;
+  });
+  y+=20;
+  if(y+96>H-40){doc.addPage();y=M;}
+  doc.setFillColor(...navy);doc.roundedRect(M,y,cw,90,6,6,'F');
+  doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(12);
+  doc.text('Agenda tu llamada de 30 minutos',M+16,y+24);
+  doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(219,230,240);
+  doc.text(doc.splitTextToSize('Diagnóstico verbal, identificación de los riesgos más relevantes y criterio honesto sobre tus próximos pasos. Sin costo, sin compromiso.',cw-32),M+16,y+42);
+  doc.setFont('helvetica','bold');doc.setTextColor(255);
+  doc.text('Web: dahri.io/contacto    Correo: paco@dahri.io    Duración: 30 min',M+16,y+78);
+  doc.setTextColor(...muted);doc.setFont('helvetica','normal');doc.setFontSize(7.5);
+  doc.text(doc.splitTextToSize('© DAHRI Consulting LLC, Washington D.C. — Instrumento educativo. No constituye asesoría legal ni reemplaza una evaluación profesional formal. Marco: ISO/IEC 42001:2023 y Recomendación UNESCO 2021. — dahri.io',cw),M,H-30);
+  doc.save('Diagnostico-Gobernanza-IA-DAHRI.pdf');
+}
+
+function renderResult(r){
+  const color=r.zone.id==='segura'?'var(--safe)':r.zone.id==='alerta'?'var(--warn)':'var(--crit)';
+  stage.innerHTML=`
+  <div class="card" style="text-align:center">
+    <div class="eyebrow">Tu resultado</div>
+    <div class="result-score" style="margin-top:14px">${r.score}<small> / ${MAX_SCORE}</small></div>
+    <div class="zone-badge" style="background:${color}">${esc(r.zone.label)}</div>
+    <p class="result-summary" style="text-align:left">${esc(r.zone.summary)}</p>
+    <div class="result-next" style="text-align:left"><strong>Próximo paso recomendado:</strong> ${esc(r.zone.nextStep)}</div>
+    <div class="nav" style="justify-content:center;gap:14px;flex-wrap:wrap;margin-top:24px">
+      <button class="btn btn-ghost" id="pdf-btn">⬇ Descargar mi PDF</button>
+      <a class="btn btn-primary" href="https://dahri.io/contacto" target="_blank" rel="noopener">Agenda tu llamada de 30 min →</a>
+    </div>
+    <div class="sent-note" style="justify-content:center;text-align:left;margin-top:18px">
+      <span>✓</span><span>Descarga tu diagnóstico en PDF con el botón de arriba. Nuestro equipo recibió un aviso de tu evaluación.</span>
+    </div>
+  </div>`;
+  document.getElementById('pdf-btn').addEventListener('click',()=>downloadPDF(r));
+}
+
+renderCover();
+</script>
+</body>
+</html>
