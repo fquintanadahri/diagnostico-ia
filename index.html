@@ -166,7 +166,7 @@ const progress=document.getElementById('progress');
 const progressBar=document.getElementById('progress-bar');
 const progressLabel=document.getElementById('progress-label');
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const state={email:'',company:'',answers:new Array(QUESTIONS.length).fill(null),step:-1};
+const state={name:'',email:'',company:'',answers:new Array(QUESTIONS.length).fill(null),step:-1};
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function updateProgress(){
@@ -190,6 +190,10 @@ function renderCover(){
       <li>Al finalizar podrás descargar tu diagnóstico en PDF</li>
     </ul>
     <div class="field">
+      <label for="fullname">Nombre y apellido *</label>
+      <input id="fullname" type="text" autocomplete="name" placeholder="Tu nombre y apellido" value="${esc(state.name)}" />
+    </div>
+    <div class="field">
       <label for="email">Correo electrónico *</label>
       <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="tu@organizacion.org" value="${esc(state.email)}" />
       <div class="hint">Lo usamos para identificar tu diagnóstico y, si lo deseas, contactarte.</div>
@@ -207,15 +211,18 @@ function renderCover(){
       <button class="btn btn-primary" id="start-btn">Comenzar diagnóstico →</button>
     </div>
   </div>`;
+  const nameInput=document.getElementById('fullname');
   const emailInput=document.getElementById('email');
   const companyInput=document.getElementById('company');
   const consent=document.getElementById('consent');
   const err=document.getElementById('cover-error');
   document.getElementById('start-btn').addEventListener('click',()=>{
+    const name=nameInput.value.trim();
     const email=emailInput.value.trim();
+    if(name.length<3){err.textContent='Ingresa tu nombre y apellido para continuar.';nameInput.focus();return;}
     if(!EMAIL_RE.test(email)){err.textContent='Ingresa un correo electrónico válido para continuar.';emailInput.focus();return;}
     if(!consent.checked){err.textContent='Marca la casilla de consentimiento para continuar.';return;}
-    state.email=email;state.company=companyInput.value.trim();state.step=0;renderQuestion();
+    state.name=name;state.email=email;state.company=companyInput.value.trim();state.step=0;renderQuestion();
   });
   emailInput.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('start-btn').click();});
 }
@@ -300,10 +307,11 @@ async function notifyDahri(r){
   const detalle=r.results.map(x=>`${String(x.id).padStart(2,'0')}. ${x.category}: ${x.answerText} (${x.points} pts)`).join('\n');
   const payload={
     access_key:WEB3FORMS_ACCESS_KEY,
-    subject:`[Lead] Diagnóstico IA — ${state.email} — ${r.score}/${MAX_SCORE} (${r.zone.label})`,
+    subject:`[Lead] Diagnóstico IA — ${state.name} — ${r.score}/${MAX_SCORE} (${r.zone.label})`,
     from_name:'Diagnóstico DAHRI',
     email:DAHRI_RECIPIENT,
     replyto:state.email,
+    Nombre:state.name,
     Correo:state.email,
     Organización:state.company||'(no indicada)',
     Puntaje:`${r.score}/${MAX_SCORE}`,
@@ -334,6 +342,7 @@ function downloadPDF(r){
   doc.setFontSize(15);doc.text('Diagnóstico de Madurez en Gobernanza de IA',M,48,{maxWidth:cw});
   let y=98;
   doc.setTextColor(...slate);doc.setFont('helvetica','normal');doc.setFontSize(10);
+  doc.text('Nombre: '+state.name,M,y);y+=15;
   doc.text('Correo: '+state.email,M,y);y+=15;
   if(state.company){doc.text('Organización: '+state.company,M,y);y+=15;}
   const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
